@@ -1,18 +1,26 @@
 package main
 
 import (
+	"github.com/alisher2605/url-shortener/config"
+	"github.com/alisher2605/url-shortener/internal/http"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
 )
 
+// @title           url-shortener
+// @version         1.0
+// @description    A simple URL shortener running on AWS
 func main() {
 	err := setupLogger(os.Getenv("DEBUG") != "")
 	if err != nil {
 		log.Fatalf("Can't initialize logger: %v", err)
 	}
 
+	configuration := config.OpenConfig()
+
+	http.NewServer(configuration.AppPort, configuration.MaxAge).Run()
 }
 
 func encoderConf() zapcore.EncoderConfig {

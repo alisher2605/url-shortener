@@ -1,0 +1,10 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "A simple URL shortener running on AWS",
+        "title": "url-shortener",
+        "contact": {},
+        "version": "1.0"
+    },
+    "paths": {}
+}

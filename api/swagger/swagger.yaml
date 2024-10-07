@@ -1,0 +1,7 @@
+info:
+  contact: {}
+  description: A simple URL shortener running on AWS
+  title: url-shortener
+  version: "1.0"
+paths: {}
+swagger: "2.0"
