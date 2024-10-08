@@ -22,7 +22,7 @@ func main() {
 	configuration := config.OpenConfig()
 
 	db := database.NewDatabase(configuration.Database)
-	err = db.Connect()
+	db.Connect()
 
 	http.NewServer(configuration.AppPort, configuration.MaxAge).Run()
 }
