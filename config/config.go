@@ -14,8 +14,16 @@ const (
 )
 
 type Configuration struct {
-	AppPort string `mapstructure:"app_port" validate:"required"`
-	MaxAge  int    `mapstructure:"max_age" validate:"required"`
+	AppPort  string   `mapstructure:"app_port" validate:"required"`
+	MaxAge   int      `mapstructure:"max_age" validate:"required"`
+	Database Database `mapstructure:"database" validate:"required"`
+}
+
+type Database struct {
+	Region          string `mapstructure:"region" validate:"required"`
+	Endpoint        string `mapstructure:"endpoint" validate:"required"`
+	AccessKeyId     string `mapstructure:"access_key_id" validate:"required"`
+	AccessKeySecret string `mapstructure:"access_key_secret" validate:"required"`
 }
 
 func OpenConfig() *Configuration {

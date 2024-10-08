@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/alisher2605/url-shortener/config"
+	"github.com/alisher2605/url-shortener/internal/database"
 	"github.com/alisher2605/url-shortener/internal/http"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -19,6 +20,9 @@ func main() {
 	}
 
 	configuration := config.OpenConfig()
+
+	db := database.NewDatabase(configuration.Database)
+	err = db.Connect()
 
 	http.NewServer(configuration.AppPort, configuration.MaxAge).Run()
 }
