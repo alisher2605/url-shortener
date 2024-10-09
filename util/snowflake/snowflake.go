@@ -6,7 +6,7 @@ import (
 	"github.com/bwmarrin/snowflake"
 )
 
-func SnowflakeId() (int, error) {
+func GenerateSnowflakeId() (int, error) {
 	node, err := snowflake.NewNode(1)
 	if err != nil {
 		fmt.Errorf("GenerateShortURL failed create new node. err = %v", err)
@@ -19,7 +19,7 @@ func SnowflakeId() (int, error) {
 	return int(id), nil
 }
 
-func Base62Conversion(id int64) string {
+func Base62Conversion(id int) string {
 	const chars string = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
 	var buf bytes.Buffer

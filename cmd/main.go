@@ -4,6 +4,7 @@ import (
 	"github.com/alisher2605/url-shortener/config"
 	"github.com/alisher2605/url-shortener/internal/database"
 	"github.com/alisher2605/url-shortener/internal/http"
+	managesV1 "github.com/alisher2605/url-shortener/internal/manager/v1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"log"
@@ -24,7 +25,14 @@ func main() {
 	db := database.NewDatabase(configuration.Database)
 	db.Connect()
 
-	http.NewServer(configuration.AppPort, configuration.MaxAge).Run()
+	err = db.SetupDatabase()
+	if err != nil {
+		log.Fatalf("Can't setup database: %v", err)
+	}
+
+	urlShortenerManager := managesV1.NewUrlShortener(db.UrlShortenerRepository(), configuration.UrlTtl)
+
+	http.NewServer(urlShortenerManager, configuration.AppPort, configuration.MaxAge).Run()
 }
 
 func encoderConf() zapcore.EncoderConfig {

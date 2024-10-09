@@ -2,14 +2,19 @@ package model
 
 import "time"
 
-type ShortenUrlRequest struct {
+type UrlRequest struct {
 	Url string `json:"url"`
 }
 
 type UrlShortener struct {
 	Id             int
-	ShortUrl       string
+	UrlHash        string
 	LongUrl        string
 	CreatedAt      time.Time
-	ExpirationTime time.Time
+	ExpirationTime time.Duration
+}
+
+type ShortenedUrlResponse struct {
+	Response
+	*UrlRequest
 }

@@ -14,8 +14,9 @@ const (
 )
 
 type Configuration struct {
-	AppPort  string   `mapstructure:"app_port" validate:"required"`
 	MaxAge   int      `mapstructure:"max_age" validate:"required"`
+	UrlTtl   int      `mapstructure:"url_ttl"  validate:"required"`
+	AppPort  string   `mapstructure:"app_port" validate:"required"`
 	Database Database `mapstructure:"database" validate:"required"`
 }
 

@@ -10,9 +10,14 @@ import (
 	"time"
 )
 
+const (
+	StatusEnabled = "ENABLED"
+	TableName     = "url_shortener"
+)
+
 type UrlShortenerRepository interface {
-	AddUrl(url *model.UrlShortener) error
-	LongUrl(url string) (*model.UrlShortener, error)
+	AddUrl(ctx context.Context, url *model.UrlShortener) error
+	UrlByHash(ctx context.Context, url string) (*model.UrlShortener, error)
 }
 
 type UrlShortener struct {
@@ -25,18 +30,16 @@ func NewUrlShortener(db *dynamodb.Client) UrlShortenerRepository {
 	}
 }
 
-func (u *UrlShortener) AddUrl(url *model.UrlShortener) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+func (u *UrlShortener) AddUrl(ctx context.Context, url *model.UrlShortener) error {
 
 	input := &dynamodb.PutItemInput{
-		TableName: aws.String("url-shortener"),
+		TableName: aws.String(TableName),
 		Item: map[string]types.AttributeValue{
-			"id":              &types.AttributeValueMemberN{Value: strconv.Itoa(url.Id)},
-			"short_url":       &types.AttributeValueMemberS{Value: url.ShortUrl},
-			"long_url":        &types.AttributeValueMemberS{Value: url.LongUrl},
-			"created_at":      &types.AttributeValueMemberS{Value: url.CreatedAt.Format(time.RFC3339)},
-			"expiration_time": &types.AttributeValueMemberS{Value: url.ExpirationTime.Format(time.RFC3339)},
+			"id":         &types.AttributeValueMemberN{Value: strconv.Itoa(url.Id)},
+			"url_hash":   &types.AttributeValueMemberS{Value: url.UrlHash},
+			"long_url":   &types.AttributeValueMemberS{Value: url.LongUrl},
+			"created_at": &types.AttributeValueMemberS{Value: url.CreatedAt.Format(time.RFC3339)},
+			"ttl":        &types.AttributeValueMemberN{Value: strconv.Itoa(int(url.ExpirationTime.Nanoseconds()))}, // TTL attribute in Unix epoch time
 		},
 	}
 
@@ -48,6 +51,8 @@ func (u *UrlShortener) AddUrl(url *model.UrlShortener) error {
 	return nil
 }
 
-func (u *UrlShortener) LongUrl(url string) (*model.UrlShortener, error) {
+func (u *UrlShortener) UrlByHash(ctx context.Context, url string) (*model.UrlShortener, error) {
+	//input := &dynamodb.QueryInput{}
+
 	return nil, nil
 }
