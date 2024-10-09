@@ -20,6 +20,7 @@ type Configuration struct {
 }
 
 type Database struct {
+	RetryAttempts   int    `mapstructure:"retry_attempts" validate:"required"`
 	Region          string `mapstructure:"region" validate:"required"`
 	Endpoint        string `mapstructure:"endpoint" validate:"required"`
 	AccessKeyId     string `mapstructure:"access_key_id" validate:"required"`
