@@ -7,11 +7,10 @@ type UrlRequest struct {
 }
 
 type UrlShortener struct {
-	Id             int
-	UrlHash        string
-	LongUrl        string
-	CreatedAt      time.Time
-	ExpirationTime time.Duration
+	UrlHash        string    `dynamodbav:"id"`
+	LongUrl        string    `dynamodbav:"long_url"`
+	CreatedAt      time.Time `dynamodbav:"id"`
+	ExpirationTime time.Time `dynamodbav:"-"`
 }
 
 type ShortenedUrlResponse struct {

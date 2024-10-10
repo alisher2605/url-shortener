@@ -18,7 +18,7 @@ type urlShortenerManager struct {
 
 type UrlShortener interface {
 	AddUrl(ctx context.Context, url *model.UrlRequest) (*model.UrlRequest, error)
-	LongUrl(ctx context.Context, hash string) string
+	LongUrl(ctx context.Context, hash string) (string, error)
 }
 
 func NewUrlShortener(repository database.UrlShortenerRepository, urlTtl int) UrlShortener {
@@ -39,11 +39,10 @@ func (u *urlShortenerManager) AddUrl(ctx context.Context, url *model.UrlRequest)
 	hash := snowflake.Base62Conversion(id)
 
 	err = u.repository.AddUrl(ctx, &model.UrlShortener{
-		Id:             id,
 		UrlHash:        hash,
 		LongUrl:        url.Url,
 		CreatedAt:      time.Now(),
-		ExpirationTime: 10 * time.Second,
+		ExpirationTime: time.Now().Add(time.Duration(u.urlTtl) * time.Hour),
 	})
 	if err != nil {
 		zap.S().Errorf("[ERROR] couldn't add url to database -  %v", err)
@@ -51,10 +50,16 @@ func (u *urlShortenerManager) AddUrl(ctx context.Context, url *model.UrlRequest)
 		return nil, err
 	}
 
-	return &model.UrlRequest{Url: fmt.Sprintf("%s/%s", os.Getenv(model.HostKey), hash)}, nil
+	return &model.UrlRequest{Url: fmt.Sprintf("%s/api/v1/%s", os.Getenv(model.HostKey), hash)}, nil
 }
 
-func (u *urlShortenerManager) LongUrl(ctx context.Context, hash string) string {
-	//TODO implement me
-	panic("implement me")
+func (u *urlShortenerManager) LongUrl(ctx context.Context, hash string) (string, error) {
+	url, err := u.repository.UrlByHash(ctx, hash)
+	if err != nil {
+		zap.S().Errorf("[ERROR] couldn't get url from database -  %v", err)
+
+		return "", err
+	}
+
+	return url.LongUrl, nil
 }

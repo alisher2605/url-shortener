@@ -56,5 +56,18 @@ func (u *urlShortener) shortenUrl(ctx *gin.Context) {
 }
 
 func (u *urlShortener) redirectToUrl(ctx *gin.Context) {
+	hash := ctx.Param("urlHash")
 
+	longUrl, err := u.urlShortenerManager.LongUrl(ctx, hash)
+	if err != nil {
+		zap.S().Error(err)
+		ctx.JSON(http.StatusBadRequest, model.Response{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+
+		return
+	}
+
+	ctx.Redirect(http.StatusMovedPermanently, longUrl)
 }

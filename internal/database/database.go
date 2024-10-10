@@ -21,13 +21,13 @@ type Datastore interface {
 
 type Database struct {
 	urlShortener UrlShortenerRepository
-	db           *dynamodb.Client
+	client       *dynamodb.Client
 	config       config.Database
 }
 
 func (d *Database) UrlShortenerRepository() UrlShortenerRepository {
 	if d.urlShortener == nil {
-		d.urlShortener = NewUrlShortener(d.db)
+		d.urlShortener = NewUrlShortener(d.client)
 	}
 
 	return d.urlShortener
@@ -63,11 +63,11 @@ func (d *Database) createTable(ctx context.Context) error {
 
 	zap.S().Infof("Table %s doesn't exist. Startiong table creation process at %s", TableName, time.Now())
 
-	_, err = d.db.CreateTable(ctx, &dynamodb.CreateTableInput{
+	_, err = d.client.CreateTable(ctx, &dynamodb.CreateTableInput{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String("id"),
-				AttributeType: types.ScalarAttributeTypeN,
+				AttributeType: types.ScalarAttributeTypeS,
 			},
 		},
 		KeySchema: []types.KeySchemaElement{
@@ -87,7 +87,7 @@ func (d *Database) createTable(ctx context.Context) error {
 		return err
 	}
 
-	waiter := dynamodb.NewTableExistsWaiter(d.db)
+	waiter := dynamodb.NewTableExistsWaiter(d.client)
 
 	err = waiter.Wait(ctx, &dynamodb.DescribeTableInput{TableName: aws.String(TableName)}, 10*time.Second)
 	if err != nil {
@@ -101,7 +101,7 @@ func (d *Database) createTable(ctx context.Context) error {
 }
 
 func (d *Database) checkIfTableExists(ctx context.Context) (bool, error) {
-	description, err := d.db.DescribeTable(ctx, &dynamodb.DescribeTableInput{
+	description, err := d.client.DescribeTable(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(TableName),
 	})
 	if err == nil {
@@ -122,16 +122,17 @@ func (d *Database) checkIfTableExists(ctx context.Context) (bool, error) {
 }
 
 func (d *Database) prepareTtl(ctx context.Context) error {
-	result, err := d.db.DescribeTimeToLive(ctx, &dynamodb.DescribeTimeToLiveInput{TableName: aws.String(TableName)})
+	result, err := d.client.DescribeTimeToLive(ctx, &dynamodb.DescribeTimeToLiveInput{TableName: aws.String(TableName)})
 	if err != nil {
 		zap.S().Errorf("failed to describe TTL, %v", err)
 		return err
 	}
+
 	if result.TimeToLiveDescription.TimeToLiveStatus == StatusEnabled {
 		return nil
 	}
 
-	_, err = d.db.UpdateTimeToLive(ctx, &dynamodb.UpdateTimeToLiveInput{
+	_, err = d.client.UpdateTimeToLive(ctx, &dynamodb.UpdateTimeToLiveInput{
 		TableName: aws.String(TableName),
 		TimeToLiveSpecification: &types.TimeToLiveSpecification{
 			AttributeName: aws.String("ttl"),
@@ -146,7 +147,7 @@ func (d *Database) prepareTtl(ctx context.Context) error {
 	return nil
 }
 func (d *Database) Connect() {
-	d.db = dynamodb.NewFromConfig(aws.Config{
+	d.client = dynamodb.NewFromConfig(aws.Config{
 		Region:           d.config.Region,
 		Credentials:      aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(d.config.AccessKeyId, d.config.AccessKeySecret, "")),
 		RetryMaxAttempts: d.config.RetryAttempts,
@@ -160,7 +161,7 @@ func (d *Database) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := d.db.ListTables(ctx, &dynamodb.ListTablesInput{})
+	_, err := d.client.ListTables(ctx, &dynamodb.ListTablesInput{})
 	if err != nil {
 		zap.S().Errorf("can't connect to the database: %v", err)
 		return err

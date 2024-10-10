@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/alisher2605/url-shortener/internal/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"strconv"
@@ -17,33 +18,31 @@ const (
 
 type UrlShortenerRepository interface {
 	AddUrl(ctx context.Context, url *model.UrlShortener) error
-	UrlByHash(ctx context.Context, url string) (*model.UrlShortener, error)
+	UrlByHash(ctx context.Context, hash string) (*model.UrlShortener, error)
 }
 
 type UrlShortener struct {
-	db *dynamodb.Client
+	client *dynamodb.Client
 }
 
-func NewUrlShortener(db *dynamodb.Client) UrlShortenerRepository {
+func NewUrlShortener(client *dynamodb.Client) UrlShortenerRepository {
 	return &UrlShortener{
-		db: db,
+		client: client,
 	}
 }
 
 func (u *UrlShortener) AddUrl(ctx context.Context, url *model.UrlShortener) error {
-
 	input := &dynamodb.PutItemInput{
 		TableName: aws.String(TableName),
 		Item: map[string]types.AttributeValue{
-			"id":         &types.AttributeValueMemberN{Value: strconv.Itoa(url.Id)},
-			"url_hash":   &types.AttributeValueMemberS{Value: url.UrlHash},
+			"id":         &types.AttributeValueMemberS{Value: url.UrlHash},
 			"long_url":   &types.AttributeValueMemberS{Value: url.LongUrl},
 			"created_at": &types.AttributeValueMemberS{Value: url.CreatedAt.Format(time.RFC3339)},
-			"ttl":        &types.AttributeValueMemberN{Value: strconv.Itoa(int(url.ExpirationTime.Nanoseconds()))}, // TTL attribute in Unix epoch time
+			"ttl":        &types.AttributeValueMemberN{Value: strconv.Itoa(int(url.ExpirationTime.Unix()))},
 		},
 	}
 
-	_, err := u.db.PutItem(ctx, input)
+	_, err := u.client.PutItem(ctx, input)
 	if err != nil {
 		return err
 	}
@@ -51,8 +50,29 @@ func (u *UrlShortener) AddUrl(ctx context.Context, url *model.UrlShortener) erro
 	return nil
 }
 
-func (u *UrlShortener) UrlByHash(ctx context.Context, url string) (*model.UrlShortener, error) {
-	//input := &dynamodb.QueryInput{}
+func (u *UrlShortener) UrlByHash(ctx context.Context, hash string) (*model.UrlShortener, error) {
+	input := &dynamodb.GetItemInput{
+		TableName: aws.String(TableName),
+		Key: map[string]types.AttributeValue{
+			"id": &types.AttributeValueMemberS{Value: hash},
+		},
+	}
 
-	return nil, nil
+	result, err := u.client.GetItem(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	if result.Item == nil {
+		return nil, nil
+	}
+
+	url := new(model.UrlShortener)
+
+	err = attributevalue.UnmarshalMap(result.Item, &url)
+	if err != nil {
+		return nil, err
+	}
+
+	return url, nil
 }
